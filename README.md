@@ -10,7 +10,7 @@
 <br>
 
 ## Table of Contents
-
+<br>
 1. [What It Does](#what-it-does)
 2. [Architecture Overview](#architecture-overview)
 3. [The 4-Agent Pipeline](#the-4-agent-pipeline)

@@ -11,6 +11,9 @@
 
 https://linkedin-optimizer-ai.streamlit.app/
 
+# Loom Video link
+https://www.loom.com/share/ccad611cb4c74e4599cb7159ba1c5c84
+
 <br>
 
 ## Table of Contents

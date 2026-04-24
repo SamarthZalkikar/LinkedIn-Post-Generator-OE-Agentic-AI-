@@ -7,7 +7,7 @@
 [![Groq](https://img.shields.io/badge/Groq-LLaMA%203-orange?style=flat-square)](https://console.groq.com/)
 [![Gemini](https://img.shields.io/badge/Gemini-2.0%20Flash-blue?style=flat-square)](https://aistudio.google.com/)
 
----
+<br>
 
 ## Table of Contents
 

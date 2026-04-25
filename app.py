@@ -6,10 +6,11 @@ Models:
   Agent 2 (Gap Analyzer)      → Groq  / llama-3.3-70b-versatile  (strong reasoning)
   Agent 3 (Profile Rewriter)  → Gemini / gemini-2.0-flash        (best writing quality)
   Agent 4 (LLM-as-Judge)      → Groq  / llama-3.1-8b-instant    (fast evaluation)
+  Agent 5 (Post Generator)    → Gemini / gemini-2.0-flash        (creative post writing)
 """
 
 import streamlit as st
-from agents import trend_researcher, gap_analyzer, profile_rewriter, llm_judge
+from agents import trend_researcher, gap_analyzer, profile_rewriter, llm_judge, linkedin_post_generator
 
 # ── Page Config ───────────────────────────────────────────────────────────────
 
@@ -465,12 +466,13 @@ hr { border: 0; border-top: 2px solid var(--bg2) !important; margin: 1.5rem 0 !i
 # ── UI Helpers ────────────────────────────────────────────────────────────────
 
 def render_step_bar(active: int):
-    """Render the 4-step progress indicator. active=1..4; 5=all done."""
+    """Render the 5-step progress indicator. active=1..5; 6=all done."""
     steps = [
-        ("🔍", "Trend Research", "Groq/llama-3.1-8b"),
-        ("🔎", "Gap Analysis", "Groq/llama-3.3-70b"),
-        ("✍️", "Profile Rewrite", "Gemini/gemini-2.0"),
-        ("⚖️", "Quality Judge", "Groq/llama-3.1-8b"),
+        ("\U0001f50d", "Trend Research", "Groq/llama-3.1-8b"),
+        ("\U0001f50e", "Gap Analysis", "Groq/llama-3.3-70b"),
+        ("\u270d\ufe0f", "Profile Rewrite", "Gemini/gemini-2.0"),
+        ("\u2696\ufe0f", "Quality Judge", "Groq/llama-3.1-8b"),
+        ("\U0001f4dd", "Post Generator", "Gemini/gemini-2.0"),
     ]
     html = '<div class="step-bar">'
     for i, (icon, label, model) in enumerate(steps, 1):
@@ -525,7 +527,8 @@ def render_sidebar():
     &#x1F50D; Trend Research &rarr; <span style="color:#fabd2f;font-weight:700;">Groq / llama-3.1-8b-instant</span><br>
     &#x1F50E; Gap Analysis &rarr; <span style="color:#fabd2f;font-weight:700;">Groq / llama-3.3-70b-versatile</span><br>
     &#x270D;&#xFE0F; Profile Rewrite &rarr; <span style="color:#8ec07c;font-weight:700;">Gemini / gemini-2.0-flash</span><br>
-    &#x2696;&#xFE0F; Quality Judge &rarr; <span style="color:#fabd2f;font-weight:700;">Groq / llama-3.1-8b-instant</span>
+    &#x2696;&#xFE0F; Quality Judge &rarr; <span style="color:#fabd2f;font-weight:700;">Groq / llama-3.1-8b-instant</span><br>
+    &#x1F4DD; Post Generator &rarr; <span style="color:#8ec07c;font-weight:700;">Gemini / gemini-2.0-flash</span>
   </div>
 </div>
 <div style="background:#3c3836;border:1px solid #504945;border-left:3px solid #83a598;padding:.7rem 1rem;margin-bottom:1rem;">
@@ -692,10 +695,20 @@ def main():
             judge_data = llm_judge(jb, rewrite_data["headline"],
                                    rewrite_data["about"], rewrite_data["skills"])
         render_step_bar(5)
+        with st.spinner("\U0001f4dd Agent 5 — Generating your LinkedIn post..."):
+            post_data = linkedin_post_generator(
+                jb,
+                rewrite_data["headline"],
+                rewrite_data["about"],
+                rewrite_data["skills"],
+                trend_data["trend_report"],
+            )
+        render_step_bar(6)
 
         st.session_state.pipeline_results = {
             "trend": trend_data, "gaps": gap_data,
             "rewrite": rewrite_data, "judge": judge_data,
+            "post": post_data,
         }
         st.session_state.chat_step = 6
         st.session_state.messages.append({
@@ -711,6 +724,7 @@ def main():
         gap_data     = res["gaps"]
         rewrite_data = res["rewrite"]
         judge_data   = res["judge"]
+        post_data    = res.get("post", {})
         ch = st.session_state.current_headline
         ca = st.session_state.current_about
         cs = st.session_state.current_skills
@@ -863,6 +877,55 @@ def main():
             st.markdown(score_html, unsafe_allow_html=True)
             if judge_data.get("reasoning"):
                 st.markdown(f'<div class="score-reasoning">{_safe(judge_data["reasoning"])}</div>', unsafe_allow_html=True)
+
+            # ── LinkedIn Post ───────────────────────────────────────────────
+            st.markdown('<div class="result-sub">&#x1F4DD; Your LinkedIn Post</div>', unsafe_allow_html=True)
+            post_text = post_data.get("post", "") if post_data else ""
+            post_hook = post_data.get("hook", "") if post_data else ""
+            if post_text:
+                # Hook banner
+                if post_hook:
+                    hook_safe = post_hook.replace('<', '&lt;').replace('>', '&gt;')
+                    st.markdown(f"""
+<div style="
+  background:var(--yellow);color:#000;
+  border:3px solid #000;box-shadow:5px 5px 0 #000;
+  padding:1rem 1.3rem;margin-bottom:1rem;
+  font-family:'JetBrains Mono',monospace;
+  font-size:.92rem;font-weight:800;line-height:1.5;
+">
+  &#x1F3AF; <span style="font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;font-weight:800;display:block;margin-bottom:.3rem;opacity:.7;">SCROLL-STOPPING HOOK</span>
+  {hook_safe}
+</div>""", unsafe_allow_html=True)
+
+                # Full post card
+                st.markdown(f"""
+<div style="
+  background:var(--bg0-s);border:2px solid var(--aqua);
+  border-left:4px solid var(--aqua);box-shadow:4px 4px 0 #000;
+  padding:1.2rem 1.4rem;margin-bottom:.8rem;
+  font-family:'Space Grotesk',sans-serif;
+  font-size:.88rem;color:var(--fg2);line-height:1.8;
+  white-space:pre-wrap;
+">
+  <div style="font-family:'JetBrains Mono',monospace;font-size:.58rem;font-weight:800;
+              color:var(--aqua);text-transform:uppercase;letter-spacing:.12em;margin-bottom:.75rem;
+              border-bottom:1px solid var(--bg2);padding-bottom:.4rem;">
+    &#x1F4CB; GENERATED POST — COPY &amp; PASTE TO LINKEDIN
+  </div>
+  {post_text.replace(chr(10), '<br>')}
+</div>""", unsafe_allow_html=True)
+
+                # Copy-friendly text area
+                st.text_area(
+                    "\U0001f4cb Copy your post (click inside → Ctrl+A → Ctrl+C)",
+                    value=post_text,
+                    height=260,
+                    key="post_copy_area",
+                    help="Select all text and copy to paste on LinkedIn",
+                )
+            else:
+                st.warning("Post generation did not return content. The profile pipeline results are shown above.")
 
             # ── Raw research ───────────────────────────────────────────────────
             st.markdown('<div class="result-sub">&#x1F52C; Raw Research</div>', unsafe_allow_html=True)

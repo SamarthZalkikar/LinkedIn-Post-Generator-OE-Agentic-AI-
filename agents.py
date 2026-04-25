@@ -1,11 +1,12 @@
 """
-agents.py — LinkedIn Profile Optimizer: 4-Agent Pipeline Functions
+agents.py — LinkedIn Profile Optimizer: 5-Agent Pipeline Functions
 
 Model assignment:
-  - Agent 1 (Trend Researcher)  → Groq  / llama-3.1-8b-instant   (fast synthesis)
-  - Agent 2 (Gap Analyzer)      → Groq  / llama-3.3-70b-versatile (strong reasoning)
-  - Agent 3 (Profile Rewriter)  → Gemini / gemini-2.0-flash       (best writing quality)
-  - Agent 4 (LLM-as-Judge)      → Groq  / llama-3.1-8b-instant   (fast evaluation)
+  - Agent 1 (Trend Researcher)   → Groq  / llama-3.1-8b-instant   (fast synthesis)
+  - Agent 2 (Gap Analyzer)       → Groq  / llama-3.3-70b-versatile (strong reasoning)
+  - Agent 3 (Profile Rewriter)   → Gemini / gemini-2.0-flash       (best writing quality)
+  - Agent 4 (LLM-as-Judge)       → Groq  / llama-3.1-8b-instant   (fast evaluation)
+  - Agent 5 (Post Generator)     → Gemini / gemini-2.0-flash       (creative post writing)
 """
 
 import os
@@ -327,5 +328,67 @@ Return ONLY valid JSON, no extra text:
         out["reasoning"] = parsed.get("reasoning", "")
     except (ValueError, TypeError) as e:
         out["error"] = f"Score parsing failed: {e}"
+
+    return out
+
+
+# ── Agent 5 — LinkedIn Post Generator (Gemini / gemini-2.0-flash) ────────────
+
+def linkedin_post_generator(job_role: str, headline: str, about: str,
+                            skills: str, trend_report: str) -> dict:
+    """
+    Generate an engaging, role-specific LinkedIn post based on the optimized
+    profile data. Uses Gemini gemini-2.0-flash for creative writing quality.
+
+    Returns:
+        dict with keys: post (str), hook (str), raw_response (str), error (str|None)
+    """
+    out = {"post": "", "hook": "", "raw_response": "", "error": None}
+
+    skills_preview = ", ".join(s.strip() for s in skills.replace("\n", ",").split(",") if s.strip())[:200]
+    about_preview = about[:500] if about else ""
+
+    prompt = f"""You are an expert LinkedIn content strategist. Write an engaging LinkedIn post for someone targeting the role of "{job_role}".
+
+Their optimized profile:
+- Headline: {headline}
+- About (excerpt): {about_preview}
+- Key Skills: {skills_preview}
+
+Role-specific LinkedIn trends:
+{trend_report[:500]}
+
+Post requirements:
+1. START with a powerful 1-2 line hook that stops the scroll (no emojis at the very start — use a provocative statement or question)
+2. Share 3-5 punchy insights, tips, or value-adds relevant to "{job_role}" professionals
+3. Each insight on its own line, prefixed with a relevant emoji
+4. End with a CTA inviting connection or comments (e.g. "DM me", "What do you think?")
+5. Add 5-7 relevant hashtags on the last line
+6. Total length: 150-250 words (LinkedIn sweet spot)
+7. Tone: confident, conversational, authentic — NOT corporate or salesy
+
+Return your response in this EXACT format:
+HOOK: <the opening 1-2 lines only>
+POST: <the full post text including the hook, insights, CTA, and hashtags>"""
+
+    raw = _chat_gemini(prompt)
+    out["raw_response"] = raw
+
+    # Extract HOOK
+    hook_match = re.search(r"HOOK:\s*(.+?)(?=\nPOST:|$)", raw, re.DOTALL | re.IGNORECASE)
+    if hook_match:
+        out["hook"] = hook_match.group(1).strip()
+
+    # Extract POST
+    post_match = re.search(r"POST:\s*(.+)", raw, re.DOTALL | re.IGNORECASE)
+    if post_match:
+        out["post"] = post_match.group(1).strip()
+    else:
+        # Fallback: use the entire raw response if markers not found
+        out["post"] = raw.strip()
+
+    # Clean up any stray label artifacts
+    out["post"] = re.sub(r"^(hook|post):\s*", "", out["post"], flags=re.IGNORECASE).strip()
+    out["hook"] = re.sub(r"^hook:\s*", "", out["hook"], flags=re.IGNORECASE).strip()
 
     return out

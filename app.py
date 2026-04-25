@@ -15,7 +15,7 @@ from agents import trend_researcher, gap_analyzer, profile_rewriter, llm_judge, 
 # ── Page Config ───────────────────────────────────────────────────────────────
 
 st.set_page_config(
-    page_title="LinkedIn Profile Optimizer AI",
+    page_title="LinkedIn Profile Optimizer and Post generation AI",
     page_icon="🚀",
     layout="wide",
     initial_sidebar_state="expanded",

@@ -1,6 +1,6 @@
-# 🚀 LinkedIn Profile Optimizer AI
+# 🚀 LinkedIn Profile Optimizer & Post Generator AI
 
-> **A 4-agent AI pipeline that researches live LinkedIn trends, identifies gaps in your profile, rewrites every section, and scores the result — powered by Groq + Gemini, no local GPU needed.**
+> **A 5-agent AI pipeline that researches live LinkedIn trends, identifies gaps in your profile, rewrites every section, scores the result, and generates a ready-to-post LinkedIn post — powered by Groq + Gemini, no local GPU needed.**
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue?style=flat-square)](https://www.python.org/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.35%2B-FF4B4B?style=flat-square)](https://streamlit.io/)
@@ -20,7 +20,7 @@ https://www.loom.com/share/ccad611cb4c74e4599cb7159ba1c5c84
 
 1. [What It Does](#what-it-does)
 2. [Architecture Overview](#architecture-overview)
-3. [The 4-Agent Pipeline](#the-4-agent-pipeline)
+3. [The 5-Agent Pipeline](#the-5-agent-pipeline)
 4. [File Structure](#file-structure)
 5. [Tech Stack](#tech-stack)
 6. [Prerequisites](#prerequisites)
@@ -38,48 +38,49 @@ https://www.loom.com/share/ccad611cb4c74e4599cb7159ba1c5c84
 
 ## What It Does
 
-LinkedIn Profile Optimizer AI is a **conversational Streamlit web app** that takes your existing LinkedIn profile and target job role, then runs it through a sequential **4-agent LLM pipeline**:
+LinkedIn Profile Optimizer AI is a **conversational Streamlit web app** that takes your existing LinkedIn profile and target job role, then runs it through a sequential **5-agent LLM pipeline**:
 
 1. **Researches** current LinkedIn trends for your role (live DuckDuckGo search)
 2. **Identifies gaps** between your profile and recruiter expectations
 3. **Rewrites** your headline, about section, and skills with ATS-friendly language
 4. **Scores** the rewritten profile on clarity, keyword density, and professional appeal
+5. **Generates** a ready-to-post, role-specific LinkedIn post with a scroll-stopping hook, punchy insights, CTA, and hashtags
 
-Results are shown as a side-by-side LinkedIn-style card comparison with an SVG donut score gauge.
+Results are shown as a side-by-side LinkedIn-style card comparison, an SVG donut score gauge, and a copy-ready LinkedIn post card.
 
 ---
 
 ## Architecture Overview
 
 ```
-┌──────────────────────────────────────────────────────────────────┐
-│                  Streamlit Frontend (app.py)                     │
-│  ┌──────────┐  ┌──────────┐  ┌───────────────┐  ┌────────────┐   │
-│  │ Chat UI  │→ │ Step Bar │→ │ Profile Cards │→ │ Score Card │   │
-│  │ (4 Q&A)  │  │(progress)│  │(orig vs. opt) │  │(SVG donut) │   │
-│  └──────────┘  └──────────┘  └───────────────┘  └────────────┘   │
-└─────────────────────────┬────────────────────────────────────────┘
-                          │ calls
-┌─────────────────────────▼─────────────────────────────────────────┐
-│                  Agent Pipeline (agents.py)                       │
-│                                                                   │
-│  Agent 1          Agent 2            Agent 3         Agent 4      │
-│  Trend       ──►  Gap           ──►  Profile    ──►  LLM-as-      │
-│  Researcher       Analyzer           Rewriter        Judge        │
-│                                                                   │
-│  Groq             Groq               Gemini           Groq        │
-│  llama-3.1-8b     llama-3.3-70b      gemini-2.0-flash llama-3.1-8b│
-└──────┬─────────────────────────────────────────┬──────────────────┘
-       │                                         │
-┌──────▼──────┐                        ┌─────────▼────────┐
-│ DuckDuckGo  │                        │  Groq Cloud API  │
-│ Web Search  │                        │  Gemini Cloud    │
-└─────────────┘                        └──────────────────┘
+┌────────────────────────────────────────────────────────────────────────┐
+│                     Streamlit Frontend (app.py)                        │
+│  ┌──────────┐  ┌──────────┐  ┌───────────────┐  ┌────────┐  ┌───────┐ │
+│  │ Chat UI  │→ │ Step Bar │→ │ Profile Cards │→ │ Score  │→ │ Post  │ │
+│  │ (4 Q&A)  │  │(progress)│  │(orig vs. opt) │  │(donut) │  │ Card  │ │
+│  └──────────┘  └──────────┘  └───────────────┘  └────────┘  └───────┘ │
+└──────────────────────────┬─────────────────────────────────────────────┘
+                           │ calls
+┌──────────────────────────▼──────────────────────────────────────────────┐
+│                     Agent Pipeline (agents.py)                          │
+│                                                                         │
+│  Agent 1     Agent 2         Agent 3        Agent 4       Agent 5       │
+│  Trend  ──►  Gap        ──►  Profile  ──►  LLM-as-  ──►  Post          │
+│  Researcher  Analyzer        Rewriter       Judge          Generator    │
+│                                                                         │
+│  Groq        Groq            Gemini         Groq           Gemini       │
+│  3.1-8b      3.3-70b         2.0-flash      3.1-8b         2.0-flash    │
+└──────┬────────────────────────────────────────────┬──────────────────────┘
+       │                                            │
+┌──────▼──────┐                           ┌─────────▼────────┐
+│ DuckDuckGo  │                           │  Groq Cloud API  │
+│ Web Search  │                           │  Gemini Cloud    │
+└─────────────┘                           └──────────────────┘
 ```
 
 ---
 
-## The 4-Agent Pipeline
+## The 5-Agent Pipeline
 
 ### Agent 1 — Trend Researcher
 **Model:** `Groq / llama-3.1-8b-instant`
@@ -143,13 +144,31 @@ Scores the *rewritten* profile and returns JSON:
 
 ---
 
+### Agent 5 — LinkedIn Post Generator
+**Model:** `Gemini / gemini-2.0-flash` *(falls back to Groq llama-3.3-70b on quota error)*
+
+Takes the optimized profile (headline, about, skills) plus the role and trend report, and crafts a **ready-to-post LinkedIn post** following content best practices:
+
+- 🎯 **Scroll-stopping hook** — a bold opening statement or question (shown separately in a yellow banner)
+- 💡 **3–5 punchy insights** prefixed with role-relevant emojis
+- 📣 **CTA** — invites comments or connections
+- `#️⃣` **5–7 hashtags** for reach
+- Sweet-spot length of **150–250 words**
+- Tone: confident, conversational, authentic — not corporate
+
+The full post is displayed in a copy-ready card with a text area for easy Ctrl+A → Ctrl+C.
+
+**Returns:** `{ post, hook, raw_response, error }`
+
+---
+
 ## File Structure
 
 ```
 linkedin-optimizer/
 │
 ├── app.py                   # Streamlit UI + pipeline orchestration
-├── agents.py                # 4 agent functions (pure Python, no UI)
+├── agents.py                # 5 agent functions (pure Python, no UI)
 ├── requirements.txt         # Python dependencies
 ├── .env                     # Local API keys (git-ignored)
 ├── .env.example             # Key template to share with others
@@ -162,12 +181,12 @@ linkedin-optimizer/
 
 | Section | Responsibility |
 |---------|---------------|
-| CSS (lines 25–461) | Full Gruvbox/Neobrutalist design system |
-| `render_step_bar()` | 4-step progress bar showing active agent |
+| CSS | Full Gruvbox/Neobrutalist design system |
+| `render_step_bar()` | 5-step progress bar showing active agent |
 | `render_sidebar()` | Model map (Groq/Gemini) + usage tips |
 | `main()` — Chat Loop | Conversational Q&A intake (steps 1–4) |
-| `main()` — Pipeline | Runs 4 agents sequentially (step 5) |
-| `main()` — Results | Side-by-side cards, gaps, score display (step 6) |
+| `main()` — Pipeline | Runs all 5 agents sequentially (step 5) |
+| `main()` — Results | Side-by-side cards, gaps, scores, LinkedIn post card (step 6) |
 
 ---
 
@@ -177,7 +196,7 @@ linkedin-optimizer/
 |-------|-----------|---------|
 | UI Framework | Streamlit ≥ 1.35 | Python web app with chat primitives |
 | LLM — Speed | [Groq](https://console.groq.com/) | Ultra-fast inference for Agents 1, 2, 4 |
-| LLM — Quality | [Gemini 2.0 Flash](https://aistudio.google.com/) | Best writing quality for Agent 3 |
+| LLM — Quality | [Gemini 2.0 Flash](https://aistudio.google.com/) | Best writing quality for Agents 3 & 5 |
 | Web Search | DDGS (DuckDuckGo) | Free, no-key live trend research |
 | Fonts | JetBrains Mono + Space Grotesk | Code aesthetic + readable body |
 | Secrets | python-dotenv + st.secrets | Works for both local & cloud deploy |
@@ -243,11 +262,14 @@ Pipeline runs (step bar shows which agent is active):
   🔎 Agent 2 — Gap Analysis      [Groq / llama-3.3-70b-versatile]
   ✍️  Agent 3 — Profile Rewrite   [Gemini / gemini-2.0-flash]
   ⚖️  Agent 4 — Quality Judge     [Groq / llama-3.1-8b-instant]
+  📝 Agent 5 — Post Generator    [Gemini / gemini-2.0-flash]
 
 Results display:
   • Side-by-side LinkedIn-style profile cards (Original vs Optimized)
   • Gap list with specific improvement areas
   • SVG donut + per-metric score bars (Clarity, Keywords, Appeal)
+  • 📝 LinkedIn Post card — scroll-stopping hook banner + full post
+  • Copy-ready text area (Ctrl+A → Ctrl+C → paste to LinkedIn)
   • Expandable raw DuckDuckGo trend report
   • "Start Over" button to analyze another profile
 ```
@@ -320,15 +342,24 @@ The app uses a **Neobrutalist × Gruvbox Dark** design — all plain CSS injecte
 │  Groq llama-3.1-8b → JSON scores                         │
 │  Output: clarity, keyword_density, appeal, overall       │
 └──────────────────────────┬───────────────────────────────┘
+                           │ headline, about, skills, trend_report
+                           ▼
+┌──────────────────────────────────────────────────────────┐
+│  Agent 5 — linkedin_post_generator(role, headline,       │
+│                          about, skills, trend_report)    │
+│  Gemini 2.0-flash → HOOK + POST markers                  │
+│  Output: hook (str), post (str)                          │
+└──────────────────────────┬───────────────────────────────┘
                            │ all results
                            ▼
                   Streamlit Results UI
-          ┌───────────────────────────────────┐
-          │  Side-by-side profile cards       │
-          │  Gap list (orange border cards)   │
-          │  SVG donut + score bars           │
-          │  Expandable raw research view     │
-          └───────────────────────────────────┘
+          ┌──────────────────────────────────────┐
+          │  Side-by-side profile cards          │
+          │  Gap list (orange border cards)      │
+          │  SVG donut + score bars              │
+          │  📝 LinkedIn Post card + copy area   │
+          │  Expandable raw research view        │
+          └──────────────────────────────────────┘
 ```
 
 ---
@@ -347,13 +378,14 @@ The app uses a **Neobrutalist × Gruvbox Dark** design — all plain CSS injecte
 | `gap_analyzer(...)` | Agent 2: profile vs. trends comparison |
 | `profile_rewriter(...)` | Agent 3: full rewrite with two-pass parsing + cleaning |
 | `llm_judge(...)` | Agent 4: JSON score evaluation |
+| `linkedin_post_generator(...)` | Agent 5: role-specific post with hook, insights, CTA, hashtags |
 
 ### `app.py`
 
 | Function | Description |
 |----------|-------------|
-| `render_step_bar(active)` | Progress bar; `active=1..4` running, `5` = all done |
-| `render_sidebar()` | Shows Groq/Gemini model map + usage tips |
+| `render_step_bar(active)` | Progress bar; `active=1..5` running, `6` = all done |
+| `render_sidebar()` | Shows Groq/Gemini model map (all 5 agents) + usage tips |
 | `_safe(text)` | Strips markdown, label prefixes, HTML-escapes for safe injection |
 | `_score_donut(score)` | SVG circular gauge (green ≥8, yellow ≥6, red <6) |
 | `_chat_gemini` fallback | If Gemini 429s, silently retries via Groq smart model |
@@ -374,7 +406,7 @@ GEMINI_API_KEY=AIza...
 ```python
 MODEL_GROQ_FAST  = "llama-3.1-8b-instant"    # Agents 1 & 4
 MODEL_GROQ_SMART = "llama-3.3-70b-versatile" # Agent 2 & Gemini fallback
-MODEL_GEMINI     = "models/gemini-2.0-flash"  # Agent 3
+MODEL_GEMINI     = "models/gemini-2.0-flash"  # Agents 3 & 5
 ```
 
 Want to swap models? Any Groq-supported model ID works for `MODEL_GROQ_*`.  
@@ -432,5 +464,5 @@ Your app will be live at `https://your-app-name.streamlit.app` in ~1 minute.
 
 <div align="center">
   <strong>Built with ❤️ using Streamlit · Groq · Gemini · DuckDuckGo</strong><br>
-  <em>Cloud-powered · No local GPU needed · Deploys in minutes</em>
+  <em>5-agent pipeline · Cloud-powered · No local GPU needed · Deploys in minutes</em>
 </div>

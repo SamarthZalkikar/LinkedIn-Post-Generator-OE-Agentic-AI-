@@ -55,22 +55,22 @@ Results are shown as a side-by-side LinkedIn-style card comparison, an SVG donut
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
 │                     Streamlit Frontend (app.py)                        │
-│  ┌──────────┐  ┌──────────┐  ┌───────────────┐  ┌────────┐  ┌───────┐ │
-│  │ Chat UI  │→ │ Step Bar │→ │ Profile Cards │→ │ Score  │→ │ Post  │ │
-│  │ (4 Q&A)  │  │(progress)│  │(orig vs. opt) │  │(donut) │  │ Card  │ │
-│  └──────────┘  └──────────┘  └───────────────┘  └────────┘  └───────┘ │
+│  ┌──────────┐  ┌──────────┐  ┌───────────────┐  ┌────────┐  ┌───────┐  │
+│  │ Chat UI  │→ │ Step Bar │→ │ Profile Cards │→ │ Score  │→ │ Post  │  │
+│  │ (4 Q&A)  │  │(progress)│  │(orig vs. opt) │  │(donut) │  │ Card  │  │
+│  └──────────┘  └──────────┘  └───────────────┘  └────────┘  └───────┘  │
 └──────────────────────────┬─────────────────────────────────────────────┘
                            │ calls
 ┌──────────────────────────▼──────────────────────────────────────────────┐
 │                     Agent Pipeline (agents.py)                          │
 │                                                                         │
 │  Agent 1     Agent 2         Agent 3        Agent 4       Agent 5       │
-│  Trend  ──►  Gap        ──►  Profile  ──►  LLM-as-  ──►  Post          │
+│  Trend  ──►  Gap        ──►  Profile  ──►  LLM-as-  ──►  Post           │
 │  Researcher  Analyzer        Rewriter       Judge          Generator    │
 │                                                                         │
 │  Groq        Groq            Gemini         Groq           Gemini       │
 │  3.1-8b      3.3-70b         2.0-flash      3.1-8b         2.0-flash    │
-└──────┬────────────────────────────────────────────┬──────────────────────┘
+└──────┬────────────────────────────────────────────┬─────────────────────┘
        │                                            │
 ┌──────▼──────┐                           ┌─────────▼────────┐
 │ DuckDuckGo  │                           │  Groq Cloud API  │
